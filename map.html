@@ -221,20 +221,32 @@
     /* ══ MAP ══ */
     #map { flex: 1; z-index: 0; min-height: 0; min-width: 0; }
 
-    /* ══ MOBILE LAYOUT ══ */
+    /* ══ MOBILE LAYOUT (Grid — reliable) ══ */
     @media (max-width: 820px) {
-      body { flex-direction: column; }
+      html, body { height: 100%; }
+      body {
+        display: grid !important;
+        grid-template-rows: 45vh 1fr;
+        grid-template-columns: 1fr;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
       #map {
-        flex: 0 0 45vh;
-        order: -1;
-        width: 100%;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 45vh;
+        grid-row: 1;
       }
       #sidebar {
-        width: 100%; min-width: 0;
-        flex: 1 1 auto;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 100% !important;
         border-right: none;
         border-top: 1px solid #ddd;
         box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+        grid-row: 2;
+        overflow: hidden;
       }
     }
 
@@ -856,6 +868,15 @@ function selectCountry(ctry) {
    INIT
    ════════════════════════════════════════════ */
 selectCountry('fi');
+
+// Ensure Leaflet picks up container dimensions after layout settles (mobile fix)
+const resizeMap = () => setTimeout(() => map.invalidateSize(), 100);
+window.addEventListener('load', resizeMap);
+window.addEventListener('resize', resizeMap);
+window.addEventListener('orientationchange', () => setTimeout(() => map.invalidateSize(), 300));
+// Initial kicks — handles case where map container had wrong size at init time
+setTimeout(() => map.invalidateSize(), 0);
+setTimeout(() => map.invalidateSize(), 500);
 
 </script>
 </body>
