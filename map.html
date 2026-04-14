@@ -11,7 +11,7 @@
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family: 'Sarabun', 'Segoe UI', system-ui, sans-serif;
-      display:flex; height:100vh; overflow:hidden;
+      display:flex; height:100vh; height:100dvh; overflow:hidden;
     }
 
     /* ══ SIDEBAR ══ */
@@ -219,7 +219,24 @@
     }
 
     /* ══ MAP ══ */
-    #map { flex: 1; z-index: 0; }
+    #map { flex: 1; z-index: 0; min-height: 0; min-width: 0; }
+
+    /* ══ MOBILE LAYOUT ══ */
+    @media (max-width: 820px) {
+      body { flex-direction: column; }
+      #map {
+        flex: 0 0 45vh;
+        order: -1;
+        width: 100%;
+      }
+      #sidebar {
+        width: 100%; min-width: 0;
+        flex: 1 1 auto;
+        border-right: none;
+        border-top: 1px solid #ddd;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+      }
+    }
 
     /* Popup */
     .leaflet-popup-content-wrapper {
