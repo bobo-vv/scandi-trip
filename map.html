@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scandinavian Trip 2026 🗺️</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Sarabun', 'Segoe UI', system-ui, sans-serif;
+      display:flex; height:100vh; overflow:hidden;
+    }
+
+    /* ══ SIDEBAR ══ */
+    #sidebar {
+      width: 360px; min-width: 360px;
+      display: flex; flex-direction: column;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      overflow: hidden;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.07);
+    }
+
+    /* ─ Trip header ─ */
+    #trip-header {
+      padding: 10px 16px 9px;
+      background: linear-gradient(135deg, #1a2744 0%, #2c3e6b 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .h-title { font-size: 13.5px; font-weight: 800; color: #fff; }
+    .h-sub   { font-size: 10.5px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+    /* ─ Top nav (fixed) ─ */
+    #top-nav { flex-shrink: 0; }
+
+    /* Country tabs */
+    #country-tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .ctry-tab {
+      flex: 1; padding: 9px 4px 8px;
+      text-align: center; cursor: pointer;
+      font-size: 11px; font-weight: 700; color: #bbb;
+      border-bottom: 3px solid transparent; margin-bottom: -1px;
+      transition: color .15s, border-color .15s; user-select: none;
+    }
+    .ctry-tab .flag  { font-size: 18px; display: block; margin-bottom: 2px; }
+    .ctry-tab:hover  { color: #666; }
+    .ctry-tab.fi.active { color: #003580; border-color: #003580; }
+    .ctry-tab.se.active { color: #006AA7; border-color: #006AA7; }
+    .ctry-tab.dk.active { color: #C60C30; border-color: #C60C30; }
+
+    /* Day strip */
+    #day-strip {
+      display: flex; gap: 4px;
+      padding: 8px 10px 10px;
+      overflow-x: auto; overflow-y: hidden;
+      background: #f7f7f5;
+      border-bottom: 1px solid #e8e8e8;
+      scrollbar-width: thin;
+      scrollbar-color: #bbb #f0ede8;
+      -webkit-overflow-scrolling: touch;
+    }
+    #day-strip::-webkit-scrollbar { height: 6px; }
+    #day-strip::-webkit-scrollbar-track { background: #f0ede8; border-radius: 3px; }
+    #day-strip::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+    #day-strip::-webkit-scrollbar-thumb:hover { background: #888; }
+    .day-chip {
+      flex-shrink: 0; padding: 5px 10px;
+      border-radius: 16px; border: 1.5px solid #ddd;
+      background: #fff; cursor: pointer;
+      font-size: 10.5px; font-weight: 700; color: #777;
+      transition: all .15s; white-space: nowrap;
+      line-height: 1.3;
+    }
+    .day-chip:hover { border-color: #999; color: #111; }
+    .day-chip.fi.active { background:#003580; color:#fff; border-color:#003580; }
+    .day-chip.se.active { background:#006AA7; color:#fff; border-color:#006AA7; }
+    .day-chip.dk.active { background:#C60C30; color:#fff; border-color:#C60C30; }
+    .day-chip.tx.active { background:#555;    color:#fff; border-color:#555; }
+
+    /* ── Tour Page (scrollable) ── */
+    #tour-page {
+      flex: 1;
+      overflow-y: auto;
+      background: #faf9f7;
+    }
+    #tour-page::-webkit-scrollbar { width: 4px; }
+    #tour-page::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+    /* Hero header */
+    .tp-hero {
+      padding: 18px 20px 16px;
+      color: #fff;
+      position: relative;
+    }
+    .tp-hero-country {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase;
+      opacity: 0.85; margin-bottom: 6px;
+    }
+    .tp-hero-daynum {
+      font-size: 11px; opacity: 0.75; margin-bottom: 2px;
+    }
+    .tp-hero-date {
+      font-size: 13px; font-weight: 600; opacity: 0.9; margin-bottom: 8px;
+    }
+    .tp-hero-title {
+      font-size: 20px; font-weight: 800; line-height: 1.35;
+    }
+
+    /* Photo */
+    .tp-photo {
+      height: 175px;
+      background: #ddd;
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tp-photo img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: opacity .4s;
+    }
+    .tp-photo-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 50%, transparent 100%);
+    }
+    .tp-photo-caption {
+      position: absolute; bottom: 10px; left: 14px; right: 14px;
+      color: #fff; font-size: 12px; font-weight: 600; line-height: 1.3;
+    }
+    .tp-photo-caption .cap-meta { font-size: 10px; font-weight: 400; opacity: 0.85; margin-bottom: 2px; }
+    .tp-photo-placeholder {
+      text-align: center; color: #bbb;
+    }
+    .tp-photo-placeholder .pp-icon { font-size: 32px; margin-bottom: 6px; }
+    .tp-photo-placeholder .pp-text { font-size: 11px; }
+    .tp-photo-loading { font-size: 11px; color: #bbb; }
+
+    /* Hotel strip */
+    .tp-hotel {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      font-size: 12px; color: #444;
+    }
+    .tp-hotel .hotel-icon { font-size: 15px; }
+    .tp-hotel .hotel-label { font-size: 10px; color: #aaa; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+
+    /* Warning */
+    .tp-warn {
+      margin: 10px 16px 0;
+      padding: 9px 12px;
+      font-size: 11.5px; color: #bf360c;
+      background: #fff8f5;
+      border-radius: 8px;
+      border-left: 3px solid #ff6d00;
+      line-height: 1.6;
+    }
+
+    /* Schedule */
+    .tp-schedule { padding-bottom: 28px; }
+
+    /* Period divider */
+    .tp-period {
+      display: flex; align-items: center; gap: 8px;
+      padding: 16px 20px 6px;
+    }
+    .tp-period-icon { font-size: 13px; }
+    .tp-period-label {
+      font-size: 10px; font-weight: 800; color: #bbb;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .tp-period-line { flex: 1; height: 1px; background: #eae9e6; }
+
+    /* Schedule item */
+    .si {
+      display: flex; align-items: flex-start;
+      padding: 9px 16px 9px 14px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      gap: 10px;
+      transition: background .1s, border-color .1s;
+    }
+    .si:hover { background: #f0ede8; }
+    .si.active { background: #eef3ff; border-left-color: var(--accent, #1e88e5); }
+
+    .si-icon {
+      font-size: 15px; width: 22px; flex-shrink: 0;
+      text-align: center; padding-top: 1px;
+    }
+    .si-time {
+      font-family: 'Courier New', monospace;
+      font-size: 11.5px; font-weight: 700; color: #bbb;
+      width: 44px; flex-shrink: 0; padding-top: 2px;
+    }
+    .si-body { flex: 1; }
+    .si-name {
+      font-size: 13.5px; font-weight: 700; color: #1a1a1a;
+      line-height: 1.35;
+    }
+    .si-note {
+      font-size: 11.5px; color: #888; margin-top: 3px; line-height: 1.5;
+    }
+    .note-star { color: #e8a020; }
+    .note-warn { color: #d84315; font-weight: 700; }
+    .note-wood { color: #558b2f; font-weight: 600; }
+
+    /* Tag badge */
+    .si-tag {
+      flex-shrink: 0; padding: 2px 7px;
+      border-radius: 10px; font-size: 10px; font-weight: 700;
+      margin-top: 2px; white-space: nowrap;
+    }
+
+    /* ══ MAP ══ */
+    #map { flex: 1; z-index: 0; }
+
+    /* Popup */
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px !important;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.18) !important;
+      padding: 0 !important; overflow: hidden;
+    }
+    .leaflet-popup-content { margin: 0 !important; }
+    .pop-img { width: 230px; height: 135px; object-fit: cover; display: block; }
+    .pop-body { padding: 10px 14px 13px; min-width: 190px; }
+    .pop-meta { font-size: 10px; color: #aaa; margin-bottom: 3px; }
+    .pop-name { font-size: 14px; font-weight: 700; color: #111; line-height: 1.3; }
+    .pop-note { font-size: 11px; color: #666; margin-top: 5px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<div id="sidebar">
+  <div id="top-nav">
+    <div id="trip-header">
+      <div class="h-title">✈️ Scandinavian Trip 2026</div>
+      <div class="h-sub">Song · Woon · Zen · Zia &nbsp;|&nbsp; 16–28 ก.ค. 2569</div>
+    </div>
+
+    <div id="country-tabs">
+      <div class="ctry-tab fi" onclick="selectCountry('fi')">
+        <span class="flag">🇫🇮</span>Finland
+      </div>
+      <div class="ctry-tab se" onclick="selectCountry('se')">
+        <span class="flag">🇸🇪</span>Sweden
+      </div>
+      <div class="ctry-tab dk" onclick="selectCountry('dk')">
+        <span class="flag">🇩🇰</span>Denmark
+      </div>
+    </div>
+
+    <div id="day-strip"></div>
+  </div>
+
+  <div id="tour-page"></div>
+</div>
+
+<!-- ══ MAP ══ -->
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+/* ════════════════════════════════════════════
+   ITINERARY DATA
+   wiki = Wikipedia article title (for photos)
+   ════════════════════════════════════════════ */
+const DAYS = [
+
+  { day:1, date:"16 ก.ค.", dayTh:"พฤ.", country:"fi",
+    title:"เดินทางถึง Helsinki ✈️",
+    hotel:"Scandic Grand Central Helsinki",
+    places:[
+      { time:"15:25", name:"Helsinki Airport (HEL)", lat:60.3172, lng:24.9633, type:"flight", wiki:"Helsinki_Airport" },
+      { time:"15:50", name:"Airport Express → Helsinki Central", lat:60.1718, lng:24.9414, type:"transport" },
+      { time:"16:30", name:"Scandic Grand Central Helsinki", lat:60.1718, lng:24.9414, type:"hotel", wiki:"Helsinki_Central_railway_station" },
+      { time:"18:00", name:"Market Square — Kauppatori", lat:60.1672, lng:24.9524, type:"activity", wiki:"Market_Square,_Helsinki" },
+      { time:"19:30", name:"Korna — Nordic seasonal dinner", lat:60.1700, lng:24.9332, type:"restaurant" },
+    ]
+  },
+
+  { day:2, date:"17 ก.ค.", dayTh:"ศ.", country:"fi",
+    title:"Helsinki City Day 🏛️",
+    hotel:"Scandic Grand Central Helsinki",
+    places:[
+      { time:"09:00", name:"Oodi Library", lat:60.1742, lng:24.9380, type:"activity", note:"⭐ เดินจากโรงแรม 5 นาที · 3D printer + studio บันทึกเสียง", wiki:"Oodi_(library)" },
+      { time:"11:00", name:"Helsinki Cathedral + Senate Square", lat:60.1699, lng:24.9520, type:"landmark", note:"⭐ Must photo", wiki:"Helsinki_Cathedral" },
+      { time:"12:00", name:"Old Market Hall — Salmon Soup", lat:60.1670, lng:24.9521, type:"restaurant", note:"🐟 ร้าน Story — Salmon Soup ขึ้นชื่อ", wiki:"Old_Market_Hall,_Helsinki" },
+      { time:"13:30", name:"Ferry → Vallisaari Island", lat:60.1454, lng:25.0506, type:"activity", note:"เรือจาก Market Square · 15 นาที", wiki:"Vallisaari" },
+      { time:"16:30", name:"กลับ Market Square", lat:60.1672, lng:24.9524, type:"transport" },
+      { time:"17:00", name:"Allas Sea Pool", lat:60.1671, lng:24.9554, type:"activity", note:"⭐⭐ ว่ายน้ำ + ซาวน่ากลางทะเล · ⚠️ จองล่วงหน้า", wiki:"Allas_Sea_Pool" },
+      { time:"19:30", name:"Shelter — Finnish archipelago bread", lat:60.1611, lng:24.9415, type:"restaurant" },
+    ]
+  },
+
+  { day:3, date:"18 ก.ค.", dayTh:"ส.", country:"fi",
+    title:"Day Trip — Porvoo เมืองไม้ 🏘️",
+    hotel:"Scandic Grand Central Helsinki",
+    note:"🚗 รถเช่า Day 3–4 · ⚠️ ต้องมี IDP",
+    places:[
+      { time:"08:00", name:"รับรถเช่า Helsinki Central", lat:60.1718, lng:24.9414, type:"transport" },
+      { time:"09:30", name:"Porvoo Old Town", lat:60.3930, lng:25.6570, type:"landmark", note:"⭐ 🌿 เมืองไม้ 700 ปี · Wood Ref BRT", wiki:"Porvoo" },
+      { time:"10:30", name:"Porvoo Coffee Roastery", lat:60.3928, lng:25.6560, type:"cafe" },
+      { time:"14:00", name:"Stockmann — Fazer + Licorice + Iittala", lat:60.1691, lng:24.9387, type:"shopping", wiki:"Stockmann" },
+      { time:"19:00", name:"Kupoli Bar — Rooftop วิวเมือง", lat:60.1711, lng:24.9427, type:"restaurant" },
+    ]
+  },
+
+  { day:4, date:"19 ก.ค.", dayTh:"อา.", country:"fi",
+    title:"Nuuksio + Linnanmäki 🌲🎠",
+    hotel:"Scandic Grand Central Helsinki",
+    places:[
+      { time:"09:00", name:"Nuuksio National Park", lat:60.3250, lng:24.5620, type:"nature", wiki:"Nuuksio_National_Park" },
+      { time:"10:30", name:"Haltia Nature Center", lat:60.3230, lng:24.5540, type:"landmark", note:"⭐ 🌿 CLT Wood Architecture · Wood Ref BRT", wiki:"Haltia_(nature_centre)" },
+      { time:"14:00", name:"Fazer Factory Store (Vantaa)", lat:60.2917, lng:25.0450, type:"shopping", wiki:"Fazer" },
+      { time:"17:30", name:"Linnanmäki Amusement Park", lat:60.1900, lng:24.9305, type:"activity", note:"⭐ เปิดถึง 22:00 · เด็กๆ ชอบมาก", wiki:"Linnanmäki" },
+    ]
+  },
+
+  { day:5, date:"20 ก.ค.", dayTh:"จ.", country:"fi",
+    title:"Suomenlinna + Löyly + ขึ้นเรือ 🚢",
+    hotel:"Silja Line Commodore Class (นอนบนเรือ)",
+    places:[
+      { time:"09:15", name:"Suomenlinna Fortress Island", lat:60.1454, lng:24.9881, type:"landmark", note:"⭐ UNESCO Heritage", wiki:"Suomenlinna" },
+      { time:"15:00", name:"Löyly Sauna", lat:60.1524, lng:24.9149, type:"activity", note:"⭐⭐ ซาวน่าไม้ระแนงริมทะเล · ⚠️ จองล่วงหน้า!", wiki:"Löyly_(sauna)" },
+      { time:"17:00", name:"ขึ้นเรือ Silja Line — Olympia Terminal", lat:60.1470, lng:24.9559, type:"transport", wiki:"Silja_Line" },
+      { time:"19:00", name:"Buffet Dinner บนเรือ → Stockholm", lat:60.1470, lng:24.9559, type:"restaurant" },
+    ]
+  },
+
+  { day:6, date:"21 ก.ค.", dayTh:"อ.", country:"se",
+    title:"ถึง Stockholm + Djurgården 🏛️🎠",
+    hotel:"Mornington Hotel Stockholm (Östermalm)",
+    places:[
+      { time:"09:00", name:"เรือเทียบท่า Värtahamnen", lat:59.3617, lng:18.1078, type:"transport", note:"⚠️ Uber/Bolt → โรงแรม (ย่านมีเนิน)" },
+      { time:"10:00", name:"Mornington Hotel Stockholm", lat:59.3375, lng:18.0826, type:"hotel", wiki:"Östermalm" },
+      { time:"11:00", name:"Vasa Museum", lat:59.3280, lng:18.0914, type:"landmark", note:"⭐⭐ เรือรบโบราณ 333 ปี สภาพ 98%", wiki:"Vasa_Museum" },
+      { time:"14:00", name:"Junibacken — Pippi Longstocking", lat:59.3311, lng:18.0909, type:"activity", note:"⭐ เด็กๆ ชอบมาก", wiki:"Junibacken" },
+      { time:"16:00", name:"Gröna Lund — สวนสนุกริมน้ำ", lat:59.3237, lng:18.0960, type:"activity", note:"⭐ วิวสวย", wiki:"Gröna_Lund" },
+      { time:"19:30", name:"Meatballs for the People", lat:59.3150, lng:18.0706, type:"restaurant", note:"⭐ ⚠️ จองล่วงหน้าเท่านั้น!" },
+    ]
+  },
+
+  { day:7, date:"22 ก.ค.", dayTh:"พ.", country:"se",
+    title:"Skansen + Tekniska + Gamla Stan 🦌🤖🏰",
+    hotel:"Mornington Hotel Stockholm",
+    places:[
+      { time:"09:00", name:"Skansen — Open-Air Museum + Nordic Zoo", lat:59.3271, lng:18.1038, type:"activity", note:"⭐⭐ หมี มูส กวาง · บ้านไม้โบราณ", wiki:"Skansen" },
+      { time:"12:00", name:"Tekniska Museet", lat:59.3336, lng:18.1022, type:"activity", note:"⭐ AI + หุ่นยนต์ · โซนเด็กโค้ดดิ้ง", wiki:"Tekniska_museet" },
+      { time:"14:00", name:"Fika ☕ + StikkiNikki ไอศกรีม Organic", lat:59.3145, lng:18.0750, type:"cafe" },
+      { time:"15:30", name:"Gamla Stan — เมืองเก่า 700 ปี", lat:59.3251, lng:18.0710, type:"landmark", note:"⭐", wiki:"Gamla_stan" },
+      { time:"16:00", name:"Stortorget — จัตุรัสสัญลักษณ์", lat:59.3256, lng:18.0710, type:"landmark", note:"⭐ Must photo", wiki:"Stortorget,_Stockholm" },
+      { time:"16:30", name:"Royal Palace — เปลี่ยนเวรยาม + Treasury", lat:59.3268, lng:18.0717, type:"landmark", wiki:"Royal_Palace,_Stockholm" },
+      { time:"18:00", name:"Södermalm — เดินเล่น ร้านมือสอง", lat:59.3140, lng:18.0656, type:"activity", wiki:"Södermalm" },
+    ]
+  },
+
+  { day:8, date:"23 ก.ค.", dayTh:"พฤ.", country:"se",
+    title:"Drottningholm + SJ Train → CPH 🚂",
+    hotel:"Hotel Nimb Copenhagen",
+    places:[
+      { time:"10:00", name:"Drottningholm Palace", lat:59.3219, lng:17.8863, type:"landmark", note:"⭐ 🌿 โรงละครไม้กลไกดั้งเดิม · Wood Ref", wiki:"Drottningholm_Palace" },
+      { time:"13:00", name:"Drop Coffee ☕ + เก็บกระเป๋า", lat:59.3130, lng:18.0560, type:"cafe" },
+      { time:"15:00", name:"SJ Business Class — Stockholm → CPH", lat:59.3310, lng:18.0583, type:"transport", note:"~5 ชม. · จอง Family/Quiet Zone", wiki:"SJ_AB" },
+      { time:"17:30", name:"Øresund Bridge — 8 กม.", lat:55.8833, lng:12.9333, type:"landmark", note:"⭐ ถ่ายรูปจากรถไฟ!", wiki:"Øresund_Bridge" },
+      { time:"20:30", name:"Check-in Hotel Nimb Copenhagen", lat:55.6737, lng:12.5681, type:"hotel", note:"ติด Tivoli มีประตูเชื่อม ⭐", wiki:"Tivoli_Gardens" },
+      { time:"21:00", name:"Nyhavn — เดินเล่นเย็น", lat:55.6801, lng:12.5861, type:"activity", note:"⭐ ท่าเรือสีสัน 300 ปี", wiki:"Nyhavn" },
+    ]
+  },
+
+  { day:9, date:"24 ก.ค.", dayTh:"ศ.", country:"dk",
+    title:"Finn Juhl + Louisiana + Kronborg 🎨🏰",
+    hotel:"Hotel Nimb Copenhagen",
+    note:"🚗 รถเช่า 1 วัน · ⚠️ ต้องมี IDP",
+    places:[
+      { time:"09:30", name:"Finn Juhl's House (Charlottenlund)", lat:55.7566, lng:12.5742, type:"landmark", note:"⭐⭐ 🌿 Seamless Woodwork · Wood Ref BRT", wiki:"Finn_Juhl" },
+      { time:"11:00", name:"Louisiana Museum of Modern Art", lat:55.9742, lng:12.5440, type:"activity", note:"⭐⭐ สถาปัตยกรรมกระจก+ไม้ริมทะเล · For Children", wiki:"Louisiana_Museum_of_Modern_Art" },
+      { time:"13:30", name:"Louisiana Café — วิวทะเล", lat:55.9740, lng:12.5438, type:"restaurant" },
+      { time:"15:00", name:"Kronborg Castle (Helsingør)", lat:56.0382, lng:12.6136, type:"landmark", note:"⭐ ปราสาท Hamlet UNESCO · Alt: Viking Ship Museum ⭐⭐", wiki:"Kronborg" },
+      { time:"17:00", name:"คืนรถเช่า Copenhagen Central", lat:55.6728, lng:12.5655, type:"transport" },
+      { time:"19:00", name:"GoBoat — ล่องคลองกันเอง", lat:55.6657, lng:12.5787, type:"activity", note:"⭐ จองล่วงหน้า! · 1.5 ชม.", wiki:"Copenhagen_Canals" },
+      { time:"21:00", name:"Tivoli Gardens (กลางคืน)", lat:55.6737, lng:12.5680, type:"activity", note:"⭐ เข้าผ่านประตู Hotel Nimb", wiki:"Tivoli_Gardens" },
+    ]
+  },
+
+  { day:10, date:"25 ก.ค.", dayTh:"ส.", country:"dk",
+    title:"Mermaid + Experimentarium + CopenHill 🧜‍♀️🔬",
+    hotel:"Hotel Nimb Copenhagen",
+    note:"เดินสาย Loop เหนือ→ใต้ — ไม่วนไปวนมา",
+    places:[
+      { time:"09:00", name:"The Little Mermaid", lat:55.6929, lng:12.5993, type:"landmark", note:"⭐ สัญลักษณ์เมือง", wiki:"The_Little_Mermaid_(statue)" },
+      { time:"09:45", name:"Kastellet (ป้อมดาวจักร)", lat:55.6908, lng:12.5924, type:"landmark", note:"เดินต่อจาก Mermaid 5 นาที", wiki:"Kastellet,_Copenhagen" },
+      { time:"10:30", name:"Experimentarium (Hellerup)", lat:55.7228, lng:12.5750, type:"activity", note:"⭐⭐ Bubblearium · Tunnel of Senses · Helix Staircase · เด็กๆ อยู่ได้ 3 ชม.", wiki:"Experimentarium_(Denmark)" },
+      { time:"13:30", name:"Lunch — Experimentarium Café", lat:55.7228, lng:12.5750, type:"restaurant" },
+      { time:"14:30", name:"Coffee Collective (Nørrebro)", lat:55.6867, lng:12.5575, type:"cafe", note:"☕ กาแฟดีที่สุดเดนมาร์ก · ซื้อเม็ดกาแฟกลับบ้าน" },
+      { time:"15:30", name:"Strøget — ช้อปปิ้ง", lat:55.6771, lng:12.5718, type:"shopping", wiki:"Strøget" },
+      { time:"17:00", name:"CopenHill — ดาดฟ้าโรงงานขยะ", lat:55.6664, lng:12.6080, type:"activity", note:"⭐ วิวเมืองตอน Golden Hour · ปีนผา", wiki:"CopenHill" },
+      { time:"18:30", name:"Freetown Christiania", lat:55.6731, lng:12.5962, type:"activity", note:"⚠️ ห้ามถ่ายรูปด้านใน", wiki:"Freetown_Christiania" },
+      { time:"19:30", name:"Seafood Dinner ริมน้ำ 🦞🦐", lat:55.6780, lng:12.5870, type:"restaurant" },
+    ]
+  },
+
+  { day:11, date:"26 ก.ค.", dayTh:"อา.", country:"dk",
+    title:"Superkilen + Rundetårn + Tivoli คืนสุดท้าย 🛍️🎡",
+    hotel:"Hotel Nimb Copenhagen",
+    places:[
+      { time:"09:30", name:"Superkilen Park", lat:55.6931, lng:12.5462, type:"activity", note:"⭐ สวนดีไซน์ 3 โซน · ทางจักรยานลายเส้น", wiki:"Superkilen" },
+      { time:"10:30", name:"Nørrebro — เดินเล่นย่านชิค", lat:55.6933, lng:12.5500, type:"activity", note:"ร้านมือสอง · local design", wiki:"Nørrebro" },
+      { time:"12:00", name:"The Union Kitchen — Brunch", lat:55.6930, lng:12.5482, type:"restaurant", note:"⭐ ร้านแนะนำจาก YouTube" },
+      { time:"13:30", name:"Rundetårn (Round Tower)", lat:55.6813, lng:12.5760, type:"landmark", note:"⭐ หอคอย 350 ปี · ทางเดินแบบลาดขึ้น · วิว 360°", wiki:"Rundetaarn" },
+      { time:"14:30", name:"Rosenborg Castle + King's Garden", lat:55.6853, lng:12.5773, type:"landmark", note:"⭐ ปราสาทยุคเรอเนสซองส์ · Crown Jewels", wiki:"Rosenborg_Castle" },
+      { time:"16:00", name:"Strøget — ของฝากสุดท้าย", lat:55.6771, lng:12.5718, type:"shopping", note:"วันสุดท้ายใน Copenhagen! · Lego/Flying Tiger/Royal Copenhagen" },
+      { time:"18:00", name:"กลับโรงแรม พักเตรียมตัว", lat:55.6737, lng:12.5681, type:"hotel" },
+      { time:"19:00", name:"Dinner รอบโรงแรม / Tivoli restaurants", lat:55.6737, lng:12.5680, type:"restaurant" },
+      { time:"20:00", name:"Tivoli Gardens — คืนสุดท้าย 🎡", lat:55.6737, lng:12.5680, type:"activity", note:"⭐⭐ Last night in CPH! · เดินผ่านประตู Hotel Nimb", wiki:"Tivoli_Gardens" },
+    ]
+  },
+
+  { day:12, date:"27 ก.ค.", dayTh:"จ.", country:"dk",
+    title:"The Blue Planet + บินกลับ HEL ✈️",
+    hotel:"Scandic Helsinki Aviapolis",
+    note:"⚠️ วันบินจริง · AY962 CPH→HEL",
+    places:[
+      { time:"09:00", name:"Check-out Hotel Nimb", lat:55.6737, lng:12.5681, type:"hotel" },
+      { time:"10:00", name:"The Blue Planet (Den Blå Planet)", lat:55.6284, lng:12.5757, type:"activity", note:"⭐⭐ อะควาเรียมใหญ่สุดในยุโรปเหนือ · Touch Pool · อุโมงค์ชมฉลาม", wiki:"Den_Blå_Planet" },
+      { time:"14:00", name:"Metro → CPH Airport (~5 นาที)", lat:55.6181, lng:12.6561, type:"transport", note:"สถานี DR Byen หรือ Ørestad → CPH Airport" },
+      { time:"14:30", name:"CPH Airport — Tax Refund + Check-in", lat:55.6181, lng:12.6561, type:"flight", note:"⚠️ Tax Refund ก่อน Security! (>300 DKK/ร้าน)", wiki:"Copenhagen_Airport" },
+      { time:"16:00", name:"Duty Free ช้อปสุดท้าย CPH", lat:55.6181, lng:12.6561, type:"shopping" },
+      { time:"19:25", name:"✈️ AY962 CPH → HEL", lat:55.6181, lng:12.6561, type:"flight", note:"PNR: 9WTV6J · ถึง HEL 22:00" },
+      { time:"22:30", name:"🚖 ลีมูซีน UOB → Scandic Helsinki Aviapolis", lat:60.2889, lng:25.0389, type:"transport", note:"จ่ายผ่าน UOB · จองล่วงหน้า" },
+      { time:"23:00", name:"Check-in Scandic Helsinki Aviapolis", lat:60.2889, lng:25.0389, type:"hotel", note:"3 นาทีถึง HEL · 10 นาทีถึง Fazer Experience" },
+    ]
+  },
+
+  { day:13, date:"28 ก.ค.", dayTh:"อ.", country:"fi",
+    title:"Fazer Experience + บินกลับบ้าน 🍫🛬",
+    hotel:"— (บินกลับ BKK)",
+    note:"⚠️ วันบินจริง · AY141 HEL→BKK",
+    places:[
+      { time:"08:30", name:"Check-out Scandic Aviapolis + ฝากกระเป๋า", lat:60.2889, lng:25.0389, type:"hotel" },
+      { time:"09:00", name:"Fazer Experience Visitor Centre — เปิด 09:00 เป็นคนกลุ่มแรก!", lat:60.2917, lng:25.0553, type:"activity", note:"⭐ 🌿 Timber Finned Facade งานไม้ Nordic · Wood Ref BRT", wiki:"Fazer" },
+      { time:"09:30", name:"Exhibition — Candy Forest + AI Robotic Line", lat:60.2917, lng:25.0553, type:"activity", note:"เด็กๆ ชิมช็อกโกแลตไม่อั้น 🍫" },
+      { time:"10:30", name:"Fazer Café & Shop — Brunch + ช็อกโกแลตราคาโรงงาน", lat:60.2917, lng:25.0553, type:"restaurant", note:"⚠️ Tax Refund ยอด >40 EUR ก่อนออกจากร้าน" },
+      { time:"11:30", name:"ขับรถ → HEL Airport (~15 นาที)", lat:60.3172, lng:24.9633, type:"transport" },
+      { time:"11:50", name:"HEL Airport — Tax Refund + Check-in", lat:60.3172, lng:24.9633, type:"flight", note:"⚠️ Tax Refund ที่เคาน์เตอร์ Global Blue / Planet ก่อน Security", wiki:"Helsinki_Airport" },
+      { time:"14:05", name:"✈️ AY141 HEL → BKK", lat:60.3172, lng:24.9633, type:"flight", note:"Finnair A350 · PNR: 9VQT5U" },
+      { time:"05:30", name:"ถึง Suvarnabhumi (BKK) — พุธ 29 ก.ค. ✅", lat:13.6900, lng:100.7501, type:"flight", note:"+1 วัน" },
+    ]
+  },
+
+];
+
+/* ════════════════════════════════════════════
+   CONFIG
+   ════════════════════════════════════════════ */
+const CC = { fi:"#003580", se:"#006AA7", dk:"#C60C30", tx:"#607d8b" };
+
+const TYPE = {
+  flight:    { color:"#7b2fff", icon:"✈️" },
+  hotel:     { color:"#e67e22", icon:"🏨" },
+  transport: { color:"#90a4ae", icon:"🚌" },
+  landmark:  { color:"#1e88e5", icon:"🏛️" },
+  activity:  { color:"#43a047", icon:"🎯" },
+  restaurant:{ color:"#e53935", icon:"🍽️" },
+  cafe:      { color:"#6d4c41", icon:"☕" },
+  shopping:  { color:"#8e24aa", icon:"🛍️" },
+  nature:    { color:"#00897b", icon:"🌿" },
+};
+
+const COUNTRY_DAYS = { fi:[1,2,3,4,5,13], se:[6,7,8], dk:[9,10,11,12] };
+
+/* ════════════════════════════════════════════
+   MAP INIT
+   ════════════════════════════════════════════ */
+const map = L.map('map').setView([60.0, 15.0], 5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution:'© OpenStreetMap © CARTO', maxZoom:19
+}).addTo(map);
+
+let activeMarkers = [], activeLine = null;
+let currentDay = 1, currentCountry = 'fi';
+
+/* ════════════════════════════════════════════
+   PHOTO — Wikipedia API
+   ════════════════════════════════════════════ */
+const imgCache = {};
+
+async function fetchWikiImg(title) {
+  if (title in imgCache) return imgCache[title];
+  try {
+    const r = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+    );
+    const d = await r.json();
+    const url = d.thumbnail?.source || null;
+    imgCache[title] = url;
+    return url;
+  } catch(e) {
+    imgCache[title] = null;
+    return null;
+  }
+}
+
+function photoContent(url, place) {
+  const t = TYPE[place.type] || {};
+  return `
+    <img src="${url}" alt="${place.name}" onerror="this.parentElement.innerHTML='<div class=&quot;tp-photo-placeholder&quot;><div class=&quot;pp-icon&quot;>🖼️</div></div>'">
+    <div class="tp-photo-overlay"></div>
+    <div class="tp-photo-caption">
+      <div class="cap-meta">${t.icon || ''} ${place.time}</div>
+      ${place.name}
+    </div>
+  `;
+}
+
+function updatePhoto(place) {
+  const block = document.getElementById('tp-photo-block');
+  if (!block) return;
+  const t = TYPE[place.type] || {};
+
+  if (!place.wiki) {
+    block.innerHTML = `<div class="tp-photo-placeholder">
+      <div class="pp-icon">${t.icon || '📍'}</div>
+      <div class="pp-text">${place.name}</div>
+    </div>`;
+    return;
+  }
+
+  const cached = imgCache[place.wiki];
+  if (cached) {
+    block.innerHTML = photoContent(cached, place);
+    return;
+  }
+  if (cached === null) {
+    block.innerHTML = `<div class="tp-photo-placeholder">
+      <div class="pp-icon">${t.icon || '📍'}</div>
+      <div class="pp-text">${place.name}</div>
+    </div>`;
+    return;
+  }
+
+  block.innerHTML = `<div class="tp-photo-loading">⏳ กำลังโหลดรูป…</div>`;
+  fetchWikiImg(place.wiki).then(url => {
+    const b = document.getElementById('tp-photo-block');
+    if (!b) return;
+    if (url) b.innerHTML = photoContent(url, place);
+    else b.innerHTML = `<div class="tp-photo-placeholder">
+      <div class="pp-icon">${t.icon || '📍'}</div>
+      <div class="pp-text">${place.name}</div>
+    </div>`;
+  });
+}
+
+/* ════════════════════════════════════════════
+   TOUR PROGRAM HELPERS
+   ════════════════════════════════════════════ */
+const DAY_FULL = {
+  "จ.":"จันทร์", "อ.":"อังคาร", "พ.":"พุธ", "พฤ.":"พฤหัสบดี",
+  "ศ.":"ศุกร์", "ส.":"เสาร์", "อา.":"อาทิตย์"
+};
+const MONTH_MAP = {
+  "ม.ค.":"มกราคม","ก.พ.":"กุมภาพันธ์","มี.ค.":"มีนาคม","เม.ย.":"เมษายน",
+  "พ.ค.":"พฤษภาคม","มิ.ย.":"มิถุนายน","ก.ค.":"กรกฎาคม","ส.ค.":"สิงหาคม",
+  "ก.ย.":"กันยายน","ต.ค.":"ตุลาคม","พ.ย.":"พฤศจิกายน","ธ.ค.":"ธันวาคม"
+};
+const COUNTRY_NAME = {
+  fi: "🇫🇮 Finland", se: "🇸🇪 Sweden", dk: "🇩🇰 Denmark"
+};
+const PERIODS = [
+  { id:'morning',   label:'ช่วงเช้า',    icon:'🌅' },
+  { id:'noon',      label:'ช่วงกลางวัน', icon:'☀️' },
+  { id:'afternoon', label:'ช่วงบ่าย',    icon:'🌤️' },
+  { id:'evening',   label:'ช่วงเย็น',    icon:'🌆' },
+  { id:'night',     label:'ช่วงค่ำ',      icon:'🌙' },
+  { id:'nextday',   label:'วันถัดไป',    icon:'✅' },
+];
+
+function getPeriod(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const t = h * 100 + m;
+  if (t >= 600  && t <= 1159) return 'morning';
+  if (t >= 1200 && t <= 1359) return 'noon';
+  if (t >= 1400 && t <= 1759) return 'afternoon';
+  if (t >= 1800 && t <= 2059) return 'evening';
+  if (t >= 2100 && t <= 2359) return 'night';
+  return 'nextday';
+}
+
+function formatNote(note) {
+  if (!note) return '';
+  return note
+    .replace(/(⭐+)/g, '<span class="note-star">$1</span>')
+    .replace(/(⚠️[^·\n<]*)/g, '<span class="note-warn">$1</span>')
+    .replace(/(🌿[^·\n<]*)/g, '<span class="note-wood">$1</span>');
+}
+
+function buildFullDate(d) {
+  const parts = d.date.split(' ');
+  const dNum = parts[0];
+  const mAbbr = parts[1];
+  const fullDay = DAY_FULL[d.dayTh] || d.dayTh.replace('.','');
+  const fullMonth = MONTH_MAP[mAbbr] || mAbbr;
+  return `วัน${fullDay}ที่ ${dNum} ${fullMonth} 2569`;
+}
+
+/* ════════════════════════════════════════════
+   MAP HELPERS
+   ════════════════════════════════════════════ */
+function clearMap() {
+  activeMarkers.forEach(m => m.remove());
+  activeMarkers = [];
+  if (activeLine) { activeLine.remove(); activeLine = null; }
+}
+
+function makeIcon(num, color) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="
+      width:30px;height:30px;border-radius:50%;background:${color};
+      color:#fff;display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:700;border:2.5px solid #fff;
+      box-shadow:0 2px 10px rgba(0,0,0,0.3);cursor:pointer;
+    ">${num}</div>`,
+    iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-18],
+  });
+}
+
+function buildPopup(place, imgUrl) {
+  const t = TYPE[place.type] || {};
+  const noteHtml = place.note
+    ? `<div class="pop-note">${place.note.replace(/(⭐+)/g,'<span style="color:#f4a32e">$1</span>').replace(/(⚠️[^·\n]*)/g,'<span style="color:#e65100;font-weight:600">$1</span>')}</div>`
+    : '';
+  return `
+    ${imgUrl ? `<img class="pop-img" src="${imgUrl}" alt="${place.name}" onerror="this.style.display='none'">` : ''}
+    <div class="pop-body">
+      <div class="pop-meta">${t.icon || ''} ${place.time}</div>
+      <div class="pop-name">${place.name}</div>
+      ${noteHtml}
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════
+   SHOW DAY
+   ════════════════════════════════════════════ */
+function showDay(dayNum) {
+  currentDay = dayNum;
+  const d = DAYS[dayNum - 1];
+  const cc = CC[d.country] || '#607d8b';
+
+  clearMap();
+
+  document.querySelectorAll('.day-chip').forEach(b => {
+    b.classList.toggle('active', +b.dataset.day === dayNum);
+  });
+
+  // Group places by time period
+  const grouped = {};
+  PERIODS.forEach(p => grouped[p.id] = []);
+  d.places.forEach((p, i) => {
+    const pid = getPeriod(p.time);
+    grouped[pid].push({ ...p, _idx: i });
+  });
+
+  const fullDate = buildFullDate(d);
+  const countryLabel = COUNTRY_NAME[d.country] || d.country;
+
+  // Build tour program HTML
+  let html = `
+    <div class="tp-hero" style="background:linear-gradient(135deg, ${cc} 0%, ${cc}dd 60%, ${cc}99 100%)">
+      <div class="tp-hero-country">${countryLabel} &nbsp;·&nbsp; DAY ${d.day} / ${DAYS.length}</div>
+      <div class="tp-hero-date">${fullDate}</div>
+      <div class="tp-hero-title">${d.title}</div>
+    </div>
+
+    <div class="tp-photo" id="tp-photo-block">
+      <div class="tp-photo-loading">⏳ กำลังโหลดรูป…</div>
+    </div>
+
+    <div class="tp-hotel">
+      <span class="hotel-icon">🏨</span>
+      <span class="hotel-label">ที่พัก</span>
+      <span>${d.hotel}</span>
+    </div>
+
+    ${d.note ? `<div class="tp-warn">${formatNote(d.note)}</div>` : ''}
+
+    <div class="tp-schedule">
+  `;
+
+  PERIODS.forEach(period => {
+    const items = grouped[period.id];
+    if (!items.length) return;
+
+    html += `
+      <div class="tp-period">
+        <span class="tp-period-icon">${period.icon}</span>
+        <span class="tp-period-label">${period.label}</span>
+        <div class="tp-period-line"></div>
+      </div>
+    `;
+
+    items.forEach(p => {
+      const t = TYPE[p.type] || { color:'#aaa', icon:'📍' };
+      const noteHtml = p.note ? `<div class="si-note">${formatNote(p.note)}</div>` : '';
+      html += `
+        <div class="si" id="si-${p._idx}" data-idx="${p._idx}" style="--accent:${t.color}">
+          <div class="si-icon">${t.icon}</div>
+          <div class="si-time">${p.time}</div>
+          <div class="si-body">
+            <div class="si-name">${p.name}</div>
+            ${noteHtml}
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  html += `</div>`;
+
+  const page = document.getElementById('tour-page');
+  page.innerHTML = html;
+  page.scrollTop = 0;
+
+  // Wire sidebar click events
+  page.querySelectorAll('.si').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.idx;
+      const p = d.places[idx];
+      page.querySelectorAll('.si').forEach(x => x.classList.remove('active'));
+      el.classList.add('active');
+      if (p.lat && p.lng) map.setView([p.lat, p.lng], 14, { animate: true });
+      const marker = activeMarkers[idx];
+      if (marker) {
+        marker.setPopupContent(buildPopup(p, imgCache[p.wiki] || null));
+        marker.openPopup();
+      }
+      updatePhoto(p);
+    });
+  });
+
+  // Map markers + route
+  const coords = [];
+  d.places.forEach((p, i) => {
+    const t = TYPE[p.type] || { color:'#aaa', icon:'📍' };
+    if (!p.lat || !p.lng) { activeMarkers.push(null); return; }
+
+    coords.push([p.lat, p.lng]);
+    const marker = L.marker([p.lat, p.lng], { icon: makeIcon(i+1, t.color) })
+      .bindPopup(buildPopup(p, imgCache[p.wiki] || null), { maxWidth: 240 })
+      .addTo(map);
+
+    marker.on('popupopen', () => {
+      if (p.wiki && !imgCache[p.wiki]) {
+        fetchWikiImg(p.wiki).then(url => {
+          if (url) marker.setPopupContent(buildPopup(p, url));
+        });
+      }
+    });
+
+    marker.on('click', () => {
+      page.querySelectorAll('.si').forEach(x => x.classList.remove('active'));
+      const el = document.getElementById(`si-${i}`);
+      if (el) {
+        el.classList.add('active');
+        el.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+      updatePhoto(p);
+    });
+
+    activeMarkers.push(marker);
+  });
+
+  if (coords.length > 1) {
+    activeLine = L.polyline(coords, { color: cc, weight: 3, opacity: 0.8, dashArray:'10 6' }).addTo(map);
+    map.fitBounds(coords, { padding:[50,60] });
+  } else if (coords.length === 1) {
+    map.setView(coords[0], 14);
+  }
+
+  // Pre-fetch photos in parallel, then display first
+  const wikiPlaces = d.places.filter(p => p.wiki);
+  if (wikiPlaces.length > 0) {
+    Promise.all(wikiPlaces.map(p => fetchWikiImg(p.wiki))).then(() => {
+      const firstWithPhoto = d.places.find(p => p.wiki && imgCache[p.wiki]);
+      const block = document.getElementById('tp-photo-block');
+      if (!block) return;
+      if (firstWithPhoto) {
+        block.innerHTML = photoContent(imgCache[firstWithPhoto.wiki], firstWithPhoto);
+      } else {
+        block.innerHTML = `<div class="tp-photo-placeholder"><div class="pp-icon">🗺️</div><div class="pp-text">ไม่พบรูปภาพ</div></div>`;
+      }
+      d.places.forEach((p, i) => {
+        if (p.wiki && imgCache[p.wiki] && activeMarkers[i]) {
+          activeMarkers[i].setPopupContent(buildPopup(p, imgCache[p.wiki]));
+        }
+      });
+    });
+  } else {
+    const block = document.getElementById('tp-photo-block');
+    if (block) block.innerHTML = `<div class="tp-photo-placeholder"><div class="pp-icon">🗺️</div><div class="pp-text">ไม่มีรูปภาพสำหรับวันนี้</div></div>`;
+  }
+}
+
+/* ════════════════════════════════════════════
+   COUNTRY TABS
+   ════════════════════════════════════════════ */
+function selectCountry(ctry) {
+  currentCountry = ctry;
+  document.querySelectorAll('.ctry-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.ctry-tab.${ctry}`).classList.add('active');
+
+  const strip = document.getElementById('day-strip');
+  strip.innerHTML = '';
+  COUNTRY_DAYS[ctry].forEach(num => {
+    const d = DAYS[num - 1];
+    const chip = document.createElement('div');
+    chip.className = `day-chip ${d.country}`;
+    chip.dataset.day = num;
+    const shortDate = d.date.replace(' ก.ค.', '');
+    chip.innerHTML = `${d.dayTh} ${shortDate}`;
+    chip.title = d.title;
+    chip.onclick = () => showDay(num);
+    strip.appendChild(chip);
+  });
+
+  showDay(COUNTRY_DAYS[ctry][0]);
+}
+
+/* ════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════ */
+selectCountry('fi');
+
+</script>
+</body>
+</html>

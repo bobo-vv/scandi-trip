@@ -1,0 +1,21 @@
+# Sensitive — personal VISA documents, never commit
+เอกสารขอ visa/
+*.pdf
+*.jpg
+*.jpeg
+*.png
+
+# Claude project instructions (contain private Notion IDs)
+CLAUDE.md
+
+# Old/unused
+scandinavian-trip-2026.html
+itinerary.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
